@@ -1,0 +1,14 @@
+Date,Store,Product,Quantity,Price
+2024-08-01,Store A,Product 1,5,10.00
+2024-08-01,Store A,Product 2,3,15.00
+2024-08-01,Store A,Product 3,2,20.00
+2024-08-01,Store B,Product 1,8,10.00
+2024-08-01,Store B,Product 2,6,15.00
+2024-08-02,Store A,Product 1,7,10.00
+2024-08-02,Store A,Product 3,4,20.00
+2024-08-02,Store B,Product 2,5,15.00
+2024-08-02,Store B,Product 3,3,20.00
+2024-08-03,Store A,Product 2,2,15.00
+2024-08-03,Store A,Product 3,1,20.00
+2024-08-03,Store B,Product 1,4,10.00
+2024-08-03,Store B,Product 3,6,20.00

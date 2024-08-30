@@ -1,0 +1,8 @@
+#! /usr/bin/ruby
+
+require_relative 'program'
+
+Program
+  .new(sales: CSV.read(ARGV[0], headers: true))
+  .print
+
