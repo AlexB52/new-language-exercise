@@ -1,6 +1,53 @@
 #! /usr/bin/ruby
 
-require_relative 'ruby/program'
+require "csv"
 
-Program.new(sales: CSV.read(ARGV[0], headers: true)).print
+def formatting_template(lines)
+  lines.transpose
+    .map { |line| line.map(&:to_s).max_by(&:length).length }
+    .map { |space| "%-#{space}s" }.join(" ")
+end
+
+def print_top_products(lines)
+  template = formatting_template(lines)
+  lines.each do |line|
+    puts (template % line).strip
+  end
+end
+
+top_products = CSV
+  .foreach(ARGV[0], headers: true)
+  .with_object(Hash.new { |h,k| h[k] = {} }) do |sale, result|
+    store    = sale['Store']
+    product  = sale['Product']
+    quantity = sale['Quantity'].to_i
+    price    = sale['Price'].to_f
+    sale     = quantity * price
+
+    result[store][product] ||= {
+      'store' => store,
+      'product' => product,
+      'quantity' => 0,
+      'price' => price,
+      'total_sales' => 0
+    }
+
+    result[store][product]['quantity'] += quantity
+    result[store][product]['total_sales'] += sale
+  end.map do |store, product_summary|
+    summary = product_summary.max_by { |product, summary| summary['total_sales'] }.last
+
+    [
+      summary['store'],
+      summary['product'],
+      summary['quantity'],
+      summary['price'],
+      summary['total_sales'],
+    ]
+  end
+
+print_top_products [
+  ["Store", "Product", "Quantity", "Price", "Total Sales" ],
+  *top_products
+]
 
