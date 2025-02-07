@@ -24,9 +24,15 @@ class QuoteRepository
       SELECT id, title, body FROM quotes;
     SQL
 
-    response.map do |attributes|
-      Quote.new %i[id title body].zip(attributes).to_h
-    end
+    response.map { |attributes| build_quote(attributes) }
+  end
+
+  def find(id)
+    response = @db.execute <<~SQL, id
+      SELECT id, title, body FROM quotes WHERE id = ? LIMIT 1;
+    SQL
+
+    build_quote(response.first)
   end
 
   def create(**params)
@@ -35,8 +41,19 @@ class QuoteRepository
       VALUES(?, ?)
       RETURNING id, title, body;
     SQL
-    attributes = %i[id title body].zip(response.first).to_h
-    Quote.new(attributes)
+
+    build_quote(response.first)
+  end
+
+  def update(id, **params)
+    response = @db.execute <<~SQL, params[:title], params[:body], id
+      UPDATE quotes
+      SET title = ?, body = ?
+      WHERE id = ?
+      RETURNING id, title, body;
+    SQL
+
+    build_quote(response.first)
   end
 
   def delete(*ids)
@@ -56,5 +73,11 @@ class QuoteRepository
       SELECT COUNT(id) FROM quotes;
     SQL
     response.first.first
+  end
+
+  private
+
+  def build_quote(attr_ary)
+    Quote.new %i[id title body].zip(attr_ary).to_h
   end
 end

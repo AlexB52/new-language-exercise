@@ -66,4 +66,21 @@ class TestQuotes < Minitest::Test
 
     assert_equal [quote2], @repo.list
   end
+
+  def test_find
+    quote = @repo.create(title: 'Note 1')
+
+    assert_equal quote, @repo.find(quote.id)
+  end
+
+  def test_update
+    quote = @repo.create(title: 'a note', body: 'content')
+
+    @repo.update(quote.id, title: 'a note (updated)', body: 'content (updated)')
+
+    quote = @repo.find(quote.id)
+
+    assert_equal 'a note (updated)', quote.title
+    assert_equal 'content (updated)', quote.body
+  end
 end

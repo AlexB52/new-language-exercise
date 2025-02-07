@@ -26,7 +26,11 @@ class Client
   end
 
   def delete_quote(id)
-    delete("/quotes", params: { id: id })
+    delete("/quotes/#{id}")
+  end
+
+  def update_quote(id, params: {})
+    patch("/quotes/#{id}", params: params)
   end
 
   def post(path, params: {})
@@ -44,10 +48,18 @@ class Client
     end
   end
 
-  def delete(path, params: {})
-    uri = URI("#{@domain}#{path}/#{params[:id]}")
+  def delete(path)
+    uri = URI("#{@domain}#{path}")
     request(uri) do |http|
       Net::HTTP::Delete.new(uri)
+    end
+  end
+
+  def patch(path, params: {})
+    uri = URI("#{@domain}#{path}")
+    uri.query = URI.encode_www_form(params)
+    request(uri) do |http|
+      Net::HTTP::Patch.new(uri)
     end
   end
 
@@ -86,6 +98,10 @@ class TestQuotes < Minitest::Test
   def create_quote(**params)
     response = @client.create_quote(**params)
     Quote.new JSON.parse(response.body)
+  end
+
+  def update_quote(id, params:)
+    @client.update_quote(id, params: params)
   end
 
   def delete_quote(id)
