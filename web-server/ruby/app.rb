@@ -12,7 +12,7 @@ end
 
 require_relative 'quote_repository'
 
-DB = SQLite3::Database.new "test.sqlite"
+DB = SQLite3::Database.new ":memory:"
 
 QuoteRepository.new(db: DB).delete_all
 
@@ -31,7 +31,6 @@ class Application < Sinatra::Base
   end
 
   post '/quotes' do
-    puts params
     quote = @quotes.create(title: params[:title], body: params[:body])
     quote.to_json
   end

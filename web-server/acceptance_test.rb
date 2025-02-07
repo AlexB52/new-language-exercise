@@ -71,13 +71,11 @@ class TestQuotes < Minitest::Test
 
   def setup
     domain = ENV.fetch('DOMAIN', 'http://localhost:4567')
-    @db = SQLite3::Database.new "test.sqlite"
     @client = Client.new(domain: domain)
-    @repo = QuoteRepository.new(db: @db)
   end
 
   def teardown
-    @repo.delete_all
+    list_quotes.each { |quote| delete_quote(quote.id) }
   end
 
   def list_quotes
@@ -88,6 +86,10 @@ class TestQuotes < Minitest::Test
   def create_quote(**params)
     response = @client.create_quote(**params)
     Quote.new JSON.parse(response.body)
+  end
+
+  def delete_quote(id)
+    @client.delete_quote(id)
   end
 
   def test_server_is_up
@@ -101,12 +103,12 @@ class TestQuotes < Minitest::Test
     assert_equal [], list_quotes
 
     quote = create_quote(title: 'a note', body: 'content')
-    expected_quote = Quote.new(id: quote.id, title: 'a note', body: 'content')
-    assert_equal expected_quote, quote
+    assert_equal 'a note', quote.title
+    assert_equal 'content', quote.body
 
     assert_equal [quote], list_quotes
 
-    @client.delete_quote(quote.id)
+    delete_quote(quote.id)
 
     assert_equal [], list_quotes
   end
