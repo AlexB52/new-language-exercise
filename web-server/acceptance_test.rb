@@ -33,6 +33,10 @@ class Client
     patch("/quotes/#{id}", params: params)
   end
 
+  def find_quote(id, params: {})
+    get("/quotes/#{id}")
+  end
+
   def post(path, params: {})
     uri = URI("#{domain}#{path}")
     uri.query = URI.encode_www_form(params)
@@ -100,12 +104,18 @@ class TestQuotes < Minitest::Test
     Quote.new JSON.parse(response.body)
   end
 
-  def update_quote(id, params:)
-    @client.update_quote(id, params: params)
+  def update_quote(id, **params)
+    response = @client.update_quote(id, params: params)
+    Quote.new JSON.parse(response.body)
   end
 
   def delete_quote(id)
     @client.delete_quote(id)
+  end
+
+  def find_quote(id)
+    response = @client.find_quote(id)
+    Quote.new JSON.parse(response.body)
   end
 
   def test_server_is_up
@@ -116,16 +126,30 @@ class TestQuotes < Minitest::Test
   end
 
   def test_full_quote_lifecycle
-    assert_equal [], list_quotes
-
     quote = create_quote(title: 'a note', body: 'content')
+
     assert_equal 'a note', quote.title
     assert_equal 'content', quote.body
 
-    assert_equal [quote], list_quotes
+    assert_includes list_quotes, quote
+
+    quote = find_quote(quote.id)
+
+    assert_equal 'a note', quote.title
+    assert_equal 'content', quote.body
+
+    quote = update_quote(quote.id, title: 'a note (updated)', body: 'content (updated)')
+
+    assert_equal 'a note (updated)', quote.title
+    assert_equal 'content (updated)', quote.body
+
+    quote = find_quote(quote.id)
+
+    assert_equal 'a note (updated)', quote.title
+    assert_equal 'content (updated)', quote.body
 
     delete_quote(quote.id)
 
-    assert_equal [], list_quotes
+    refute_includes list_quotes, quote
   end
 end

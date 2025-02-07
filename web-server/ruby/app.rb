@@ -35,6 +35,16 @@ class Application < Sinatra::Base
     quote.to_json
   end
 
+  get '/quotes/:id' do
+    quote = @quotes.find(params[:id])
+    quote.to_json
+  end
+
+  patch '/quotes/:id' do
+    quote = @quotes.update(params[:id], title: params[:title], body: params[:body])
+    quote.to_json
+  end
+
   delete '/quotes/:id' do
     @quotes.delete(params[:id])
   end
