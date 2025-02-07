@@ -6,15 +6,33 @@ gemfile do
   gem "sinatra"
   gem "rackup"
   gem "puma"
+  gem "sqlite3"
+  gem "debug"
 end
 
-require "sinatra"
-require "rackup"
-require "puma"
+require_relative 'quote_repository'
+
+DB = SQLite3::Database.new "test.sqlite"
+
+QuoteRepository.new(db: DB).delete_all
 
 class Application < Sinatra::Base
-  get "/frank-says" do
-    "Put this in your pipe & smoke it!"
+  def initialize(*args, **kwargs, &block)
+    super
+    @quotes = QuoteRepository.new(db: DB)
+  end
+
+  get "/" do
+    "ok"
+  end
+
+  get '/quotes' do
+    @quotes.list.map(&:to_h).to_json
+  end
+
+  post '/quotes' do
+    quote = @quotes.create(title: params['title'], body: params['body'])
+    quote.to_json
   end
 
   run!
