@@ -1,4 +1,12 @@
+unless ENV['DOMAIN']
+  raise ArgumentError, <<~MESSAGE
+    must provide DOMAIN environment variable
+    ex: DOMAIN="http://localhost:4567" ruby acceptance_test.rb
+  MESSAGE
+end
+
 require "bundler/inline"
+
 gemfile do
   gem "minitest"
   gem "sqlite3"
@@ -6,7 +14,6 @@ gemfile do
 end
 
 require "minitest/autorun"
-require_relative 'ruby/quote_repository'
 
 class Client
   require 'uri'
@@ -17,61 +24,33 @@ class Client
     @domain = domain
   end
 
-  def list_quotes
-    get("/quotes")
-  end
-
-  def create_quote(**params)
-    post("/quotes", params: params)
-  end
-
-  def delete_quote(id)
-    delete("/quotes/#{id}")
-  end
-
-  def update_quote(id, params: {})
-    patch("/quotes/#{id}", params: params)
-  end
-
-  def find_quote(id, params: {})
-    get("/quotes/#{id}")
-  end
-
   def post(path, params: {})
     uri = URI("#{domain}#{path}")
     uri.query = URI.encode_www_form(params)
-    request(uri) do |http|
-      Net::HTTP::Post.new(uri)
-    end
+    request(uri, Net::HTTP::Post.new(uri))
   end
 
   def get(path, params: {})
     uri = URI("#{domain}#{path}")
-    request(uri) do |http|
-      Net::HTTP::Get.new(uri)
-    end
+    request(uri, Net::HTTP::Get.new(uri))
   end
 
   def delete(path)
     uri = URI("#{@domain}#{path}")
-    request(uri) do |http|
-      Net::HTTP::Delete.new(uri)
-    end
+    request(uri, Net::HTTP::Delete.new(uri))
   end
 
   def patch(path, params: {})
     uri = URI("#{@domain}#{path}")
     uri.query = URI.encode_www_form(params)
-    request(uri) do |http|
-      Net::HTTP::Patch.new(uri)
-    end
+    request(uri, Net::HTTP::Patch.new(uri))
   end
 
   private
 
-  def request(uri)
+  def request(uri, action)
     Net::HTTP.start(uri.hostname, uri.port) do |http|
-      http.request yield
+      http.request action
     end
   end
 end
@@ -86,7 +65,7 @@ class TestQuotes < Minitest::Test
   end
 
   def setup
-    domain = ENV.fetch('DOMAIN', 'http://localhost:4567')
+    domain = ENV.fetch('DOMAIN')
     @client = Client.new(domain: domain)
   end
 
@@ -95,26 +74,26 @@ class TestQuotes < Minitest::Test
   end
 
   def list_quotes
-    response = @client.list_quotes
+    response = @client.get("/quotes")
     JSON.parse(response.body).map(&Quote)
   end
 
   def create_quote(**params)
-    response = @client.create_quote(**params)
+    response = @client.post("/quotes", params: params)
     Quote.new JSON.parse(response.body)
   end
 
   def update_quote(id, **params)
-    response = @client.update_quote(id, params: params)
+    response = @client.patch("/quotes/#{id}", params: params)
     Quote.new JSON.parse(response.body)
   end
 
   def delete_quote(id)
-    @client.delete_quote(id)
+    @client.delete("/quotes/#{id}")
   end
 
   def find_quote(id)
-    response = @client.find_quote(id)
+    response = @client.get("/quotes/#{id}")
     Quote.new JSON.parse(response.body)
   end
 
