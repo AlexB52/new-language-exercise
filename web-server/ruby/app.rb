@@ -31,8 +31,13 @@ class Application < Sinatra::Base
   end
 
   post '/quotes' do
-    quote = @quotes.create(title: params['title'], body: params['body'])
+    puts params
+    quote = @quotes.create(title: params[:title], body: params[:body])
     quote.to_json
+  end
+
+  delete '/quotes/:id' do
+    @quotes.delete(params[:id])
   end
 
   run!

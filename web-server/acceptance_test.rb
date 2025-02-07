@@ -21,24 +21,41 @@ class Client
     get("/quotes")
   end
 
-  def create_note(**params)
+  def create_quote(**params)
     post("/quotes", params: params)
   end
 
-  def post(path, params:)
+  def delete_quote(id)
+    delete("/quotes", params: { id: id })
+  end
+
+  def post(path, params: {})
     uri = URI("#{domain}#{path}")
-    Net::HTTP.start(uri.hostname, uri.port) do |http|
-      uri.query = URI.encode_www_form(params)
-      req = Net::HTTP::Post.new(uri)
-      http.request(req)
+    uri.query = URI.encode_www_form(params)
+    request(uri) do |http|
+      Net::HTTP::Post.new(uri)
     end
   end
 
-  def get(path)
+  def get(path, params: {})
     uri = URI("#{domain}#{path}")
+    request(uri) do |http|
+      Net::HTTP::Get.new(uri)
+    end
+  end
+
+  def delete(path, params: {})
+    uri = URI("#{@domain}#{path}/#{params[:id]}")
+    request(uri) do |http|
+      Net::HTTP::Delete.new(uri)
+    end
+  end
+
+  private
+
+  def request(uri)
     Net::HTTP.start(uri.hostname, uri.port) do |http|
-      req = Net::HTTP::Get.new(uri)
-      http.request(req)
+      http.request yield
     end
   end
 end
@@ -49,10 +66,6 @@ class TestQuotes < Minitest::Test
   Quote = Struct.new(:id, :title, :body, keyword_init: true) do
     def self.to_proc
       ->(attributes) { new(attributes) }
-    end
-
-    def ==(other)
-      other.is_a?(Quote) && id == other.id
     end
   end
 
@@ -67,6 +80,16 @@ class TestQuotes < Minitest::Test
     @repo.delete_all
   end
 
+  def list_quotes
+    response = @client.list_quotes
+    JSON.parse(response.body).map(&Quote)
+  end
+
+  def create_quote(**params)
+    response = @client.create_quote(**params)
+    Quote.new JSON.parse(response.body)
+  end
+
   def test_server_is_up
     response = @client.get("/")
 
@@ -75,14 +98,16 @@ class TestQuotes < Minitest::Test
   end
 
   def test_full_quote_lifecycle
-    response = @client.list_quotes
-    assert_equal [], JSON.parse(response.body)
+    assert_equal [], list_quotes
 
-    response = @client.create_note(title: 'a note', body: 'content')
-    quote = Quote.new JSON.parse(response.body)
-    assert_equal Quote.new(id: quote.id, title: 'a note', body: 'content'), quote
+    quote = create_quote(title: 'a note', body: 'content')
+    expected_quote = Quote.new(id: quote.id, title: 'a note', body: 'content')
+    assert_equal expected_quote, quote
 
-    response = @client.list_quotes
-    assert_equal [quote], JSON.parse(response.body).map(&Quote)
+    assert_equal [quote], list_quotes
+
+    @client.delete_quote(quote.id)
+
+    assert_equal [], list_quotes
   end
 end

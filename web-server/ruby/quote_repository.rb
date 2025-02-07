@@ -1,4 +1,6 @@
 Quote = Struct.new(:id, :title, :body, keyword_init: true) do
+  require 'json'
+
   def to_json
     to_h.to_json
   end
