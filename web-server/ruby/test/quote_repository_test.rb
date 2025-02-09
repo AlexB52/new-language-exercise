@@ -13,6 +13,29 @@ require_relative '../quote_repository'
 
 DB = SQLite3::Database.new ":memory:"
 
+class TestQuotesExceptions < Minitest::Test
+  def setup
+    @db = DB
+    @repo = QuoteRepository.new(db: @db)
+  end
+
+  def teardown
+    @db.execute("DELETE FROM quotes;")
+  end
+
+  def test_find
+    assert_raises(QuoteRepository::RecordNotFound, 'Record id 999 was not found') do
+      @repo.find(999)
+    end
+  end
+
+  def test_update
+    assert_raises(QuoteRepository::RecordNotFound, 'Record id 999 was not found') do
+      @repo.update(999, title: 'something')
+    end
+  end
+end
+
 class TestQuotes < Minitest::Test
   def setup
     @db = DB

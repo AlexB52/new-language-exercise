@@ -7,6 +7,8 @@ Quote = Struct.new(:id, :title, :body, keyword_init: true) do
 end
 
 class QuoteRepository
+  class RecordNotFound < StandardError;end
+
   attr_accessor :db
   def initialize(db:)
     @db = db
@@ -32,7 +34,11 @@ class QuoteRepository
       SELECT id, title, body FROM quotes WHERE id = ? LIMIT 1;
     SQL
 
-    build_quote(response.first)
+    if (attributes = response.first).nil?
+      raise RecordNotFound, "Record id #{id} was not found"
+    end
+
+    build_quote(attributes)
   end
 
   def create(**params)
@@ -53,7 +59,11 @@ class QuoteRepository
       RETURNING id, title, body;
     SQL
 
-    build_quote(response.first)
+    if (attributes = response.first).nil?
+      raise RecordNotFound, "Record id #{id} was not found"
+    end
+
+    build_quote(attributes)
   end
 
   def delete(*ids)

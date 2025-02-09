@@ -94,7 +94,15 @@ class TestQuotes < Minitest::Test
 
   def find_quote(id)
     response = @client.get("/quotes/#{id}")
-    Quote.new JSON.parse(response.body)
+    if ok?(response)
+      [Quote.new(JSON.parse(response.body)), true]
+    else
+      [response, false]
+    end
+  end
+
+  def ok?(response)
+    (200...300).include?(response.code.to_i)
   end
 
   def test_server_is_up
@@ -102,6 +110,16 @@ class TestQuotes < Minitest::Test
 
     assert_equal "200", response.code
     assert_equal "ok", response.body
+  end
+
+  def test_exceptions
+    expected_message = { 'error' => 'Resource Not Found' }
+  
+    response, ok = find_quote(99_999)
+
+    refute ok
+    assert_equal '404', response.code
+    assert_equal expected_message, JSON.parse(response.body)
   end
 
   def test_full_quote_lifecycle
@@ -112,7 +130,7 @@ class TestQuotes < Minitest::Test
 
     assert_includes list_quotes, quote
 
-    quote = find_quote(quote.id)
+    quote, _ = find_quote(quote.id)
 
     assert_equal 'a note', quote.title
     assert_equal 'content', quote.body
@@ -122,7 +140,7 @@ class TestQuotes < Minitest::Test
     assert_equal 'a note (updated)', quote.title
     assert_equal 'content (updated)', quote.body
 
-    quote = find_quote(quote.id)
+    quote, _ = find_quote(quote.id)
 
     assert_equal 'a note (updated)', quote.title
     assert_equal 'content (updated)', quote.body

@@ -17,6 +17,10 @@ DB = SQLite3::Database.new ":memory:"
 QuoteRepository.new(db: DB).delete_all
 
 class Application < Sinatra::Base
+  error 404 do
+    { error: 'Resource Not Found' }.to_json
+  end
+
   def initialize(*args, **kwargs, &block)
     super
     @quotes = QuoteRepository.new(db: DB)
@@ -38,6 +42,8 @@ class Application < Sinatra::Base
   get '/quotes/:id' do
     quote = @quotes.find(params[:id])
     quote.to_json
+  rescue QuoteRepository::RecordNotFound
+    status 404
   end
 
   patch '/quotes/:id' do
